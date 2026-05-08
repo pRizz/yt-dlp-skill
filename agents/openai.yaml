@@ -1,0 +1,4 @@
+interface:
+  display_name: "yt-dlp Download"
+  short_description: "Download media with source metadata"
+  default_prompt: "Use $yt-dlp-download to download this media URL with embedded metadata and source attribution."
