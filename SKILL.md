@@ -7,7 +7,7 @@ description: Download media from yt-dlp-supported URLs while preserving source a
 
 ## Overview
 
-Use the bundled `scripts/yt-dlp-download.sh` wrapper to download media with `yt-dlp --embed-metadata`, preserve a source comment, print absolute downloaded file paths, and print embedded tags with `ffprobe` when available.
+Use the bundled `scripts/yt-dlp-download.sh` wrapper to download media with `yt-dlp --embed-metadata` when `ffmpeg` is available, preserve a source comment, print absolute downloaded file paths, convert VP9 videos to QuickTime-compatible H.264 MP4 when `ffprobe` and `ffmpeg` are available, and print embedded tags with `ffprobe` when available.
 
 The script writes downloads to the user's platform Downloads folder by default:
 
@@ -16,6 +16,8 @@ The script writes downloads to the user's platform Downloads folder by default:
 - Linux and other Unix platforms: `xdg-user-dir DOWNLOAD` when available, otherwise `$HOME/Downloads`
 
 Use `--output-dir <dir>` or `YTDLP_DOWNLOAD_DIR=<dir>` when the user asks for a specific destination. The `--output-dir` flag takes precedence over the environment variable.
+
+By default, VP9 videos are converted to H.264 MP4 and the original VP9 file is removed only after conversion succeeds. Use `--keep-original` or `YTDLP_COMPAT_KEEP_ORIGINAL=1` when the user wants to keep both files. Use `--no-compat-convert` or `YTDLP_COMPAT_CONVERT=never` when the user wants the original download left untouched.
 
 ## Workflow
 
@@ -31,6 +33,7 @@ command -v yt-dlp
 
 ```bash
 command -v ffprobe
+command -v ffmpeg
 command -v xattr
 command -v python3
 command -v xdg-user-dir
@@ -56,6 +59,15 @@ scripts/yt-dlp-download.sh --output-dir "$HOME/Desktop" "$url"
 YTDLP_DOWNLOAD_DIR="$HOME/Desktop" scripts/yt-dlp-download.sh "$url"
 ```
 
+8. For VP9 compatibility behavior, use flags or environment variables:
+
+```bash
+scripts/yt-dlp-download.sh --keep-original "$url"
+scripts/yt-dlp-download.sh --no-compat-convert "$url"
+YTDLP_COMPAT_KEEP_ORIGINAL=1 scripts/yt-dlp-download.sh "$url"
+YTDLP_COMPAT_CONVERT=never scripts/yt-dlp-download.sh "$url"
+```
+
 For multiple URLs, run the script once per URL so each file receives its own source comment.
 
 ## Verification
@@ -64,6 +76,13 @@ After the script completes:
 
 - Confirm the downloaded media file exists in the selected output directory.
 - Review each `Downloaded file:` log line for the absolute saved path.
+- Review each `Final media file:` log line for the retained playable file path.
+- For VP9 downloads with conversion enabled, verify the final video codec is `h264`:
+
+```bash
+ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nokey=1:noprint_wrappers=1 "$downloaded_file"
+```
+
 - Review the script's `ffprobe` tag output when `ffprobe` is installed.
 - On macOS, verify the Finder comment if needed:
 

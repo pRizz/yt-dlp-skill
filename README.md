@@ -5,7 +5,8 @@ A Codex skill for downloading media supported by `yt-dlp` while preserving sourc
 ## What it does
 
 - Downloads a media URL into the user's platform Downloads folder by default.
-- Runs `yt-dlp --embed-metadata`.
+- Runs `yt-dlp --embed-metadata` when `ffmpeg` is available.
+- Automatically converts VP9 video downloads to H.264 MP4 for native QuickTime playback when `ffprobe` and `ffmpeg` are available.
 - Prints the absolute path of each downloaded file.
 - Prints embedded metadata tags with `ffprobe` when available.
 - Adds a macOS Finder comment with the source URL when `xattr` and `python3` are available.
@@ -36,11 +37,14 @@ Optional helpers:
 
 ```bash
 command -v ffprobe
+command -v ffmpeg
 command -v xattr
 command -v python3
 command -v xdg-user-dir
 command -v cygpath
 ```
+
+`ffprobe` and `ffmpeg` enable automatic VP9 compatibility conversion. `ffmpeg` also enables `yt-dlp` embedded metadata post-processing. The script prefers `libx264` for high-quality H.264 MP4 output and falls back to `h264_videotoolbox` when needed. If conversion tools are unavailable, the original download is left unchanged.
 
 ## Direct script usage
 
@@ -61,4 +65,13 @@ Override the output directory with either a flag or environment variable. The fl
 ```bash
 scripts/yt-dlp-download.sh --output-dir "$HOME/Desktop" "https://example.com/media-url"
 YTDLP_DOWNLOAD_DIR="$HOME/Desktop" scripts/yt-dlp-download.sh "https://example.com/media-url"
+```
+
+By default, VP9 videos are converted to H.264 MP4 and the original VP9 file is removed only after conversion succeeds. Keep both files or disable conversion with either flags or environment variables:
+
+```bash
+scripts/yt-dlp-download.sh --keep-original "https://example.com/media-url"
+scripts/yt-dlp-download.sh --no-compat-convert "https://example.com/media-url"
+YTDLP_COMPAT_KEEP_ORIGINAL=1 scripts/yt-dlp-download.sh "https://example.com/media-url"
+YTDLP_COMPAT_CONVERT=never scripts/yt-dlp-download.sh "https://example.com/media-url"
 ```
