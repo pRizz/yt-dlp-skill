@@ -9,12 +9,18 @@ description: Download media from yt-dlp-supported URLs while preserving source a
 
 Use the bundled `scripts/yt-dlp-download.sh` wrapper to download media with `yt-dlp --embed-metadata`, preserve a source comment, print absolute downloaded file paths, and print embedded tags with `ffprobe` when available.
 
-The script writes downloads into the current working directory. Run it from the directory where the user wants the media saved.
+The script writes downloads to the user's platform Downloads folder by default:
+
+- macOS: `$HOME/Downloads`
+- Windows-like Bash shells: `%USERPROFILE%\Downloads` converted with `cygpath -u` when available, otherwise `$HOME/Downloads`
+- Linux and other Unix platforms: `xdg-user-dir DOWNLOAD` when available, otherwise `$HOME/Downloads`
+
+Use `--output-dir <dir>` or `YTDLP_DOWNLOAD_DIR=<dir>` when the user asks for a specific destination. The `--output-dir` flag takes precedence over the environment variable.
 
 ## Workflow
 
 1. Confirm the user provided a media URL supported by `yt-dlp`, such as a Twitter/X post URL or direct media URL.
-2. Choose an output directory and run commands from that directory.
+2. Let the script use the platform Downloads folder unless the user requested a specific destination.
 3. Check the required downloader:
 
 ```bash
@@ -27,6 +33,8 @@ command -v yt-dlp
 command -v ffprobe
 command -v xattr
 command -v python3
+command -v xdg-user-dir
+command -v cygpath
 ```
 
 5. Run the bundled script:
@@ -41,13 +49,20 @@ scripts/yt-dlp-download.sh "$url"
 scripts/yt-dlp-download.sh "$url" "Source URL: $url"
 ```
 
+7. For a custom output directory, use either override:
+
+```bash
+scripts/yt-dlp-download.sh --output-dir "$HOME/Desktop" "$url"
+YTDLP_DOWNLOAD_DIR="$HOME/Desktop" scripts/yt-dlp-download.sh "$url"
+```
+
 For multiple URLs, run the script once per URL so each file receives its own source comment.
 
 ## Verification
 
 After the script completes:
 
-- Confirm the downloaded media file exists in the output directory.
+- Confirm the downloaded media file exists in the selected output directory.
 - Review each `Downloaded file:` log line for the absolute saved path.
 - Review the script's `ffprobe` tag output when `ffprobe` is installed.
 - On macOS, verify the Finder comment if needed:
